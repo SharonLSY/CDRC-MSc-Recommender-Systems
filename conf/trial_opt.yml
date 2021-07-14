@@ -26,7 +26,7 @@ metrics:
 optimize:
   class: accuracy.MRR
   length: [10]
-  iterations: 200 #optional
+  #iterations: 100 #optional
 
 algorithms:
 - class: gru4rec.gru4rec.GRU4Rec

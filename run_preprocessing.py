@@ -10,20 +10,23 @@ preprocessing method ["info","org","days_test","slice"]
     days_test: adapted from gru4rec (last N days => test set)
     slice: new (create multiple train-test-combinations with a window approach  
     buys: load buys and safe file to prepared
+    test_date: splits data based on test_date and works backwards to obtain training set
 '''
-METHOD = "slice"
+METHOD = "test_date"
 
 '''
 data config (all methods)
 '''
 PATH = './data/'
-PATH_PROCESSED = './data/prepared/14072021/'
+PATH_PROCESSED = './data/prepared/test_date_trial/'
 FILE = 'test'
+NEW_ITEMS = None
 
 '''
 org_min_date config
 '''
 MIN_DATE = '2014-07-01'
+TEST_DATE = '2020-04-15'
 
 '''
 filtering config (all methods)
@@ -71,6 +74,10 @@ if __name__ == '__main__':
         
     elif METHOD == "buys":
         pp.preprocess_buys( PATH, FILE, PATH_PROCESSED )
+        
+    elif METHOD == "test_date":
+        pp.preprocess_from_test_date( PATH, FILE, PATH_PROCESSED, MIN_ITEM_SUPPORT, MIN_SESSION_LENGTH, TEST_DATE, DAYS_TRAIN, DAYS_TEST, NEW_ITEMS )
+    
     else: 
         print( "Invalid method ", METHOD )
         

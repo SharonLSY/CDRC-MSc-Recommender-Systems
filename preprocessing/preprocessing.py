@@ -11,9 +11,11 @@ SESSION_LENGTH = 30 * 60 # 30 min -- if next event is > 30 min away, then separa
 #filtering config (all methods)
 MIN_SESSION_LENGTH = 2
 MIN_ITEM_SUPPORT = 5
+NEW_ITEMS = [] # ItemId for new items (i.e. items not in train set, for item cold start evaluation)
 
 #min date config
 MIN_DATE = '2014-04-01'
+TEST_DATE = '2020-07-14'
 
 #days test default config 
 DAYS_TEST = 1
@@ -24,6 +26,15 @@ DAYS_OFFSET = 0
 DAYS_TRAIN = 90
 DAYS_TEST = 1
 DAYS_SHIFT = DAYS_TRAIN + DAYS_TEST
+
+# preprocessing from test date
+def preprocess_from_test_date(path=DATA_PATH, file=DATA_FILE, path_proc=DATA_PATH_PROCESSED, 
+                              min_item_support=MIN_ITEM_SUPPORT, min_session_length=MIN_SESSION_LENGTH, 
+                              test_date=TEST_DATE, days_train = DAYS_TRAIN, days_test=DAYS_TEST,
+                              new_items=NEW_ITEMS):
+    data, buys = load_data( path+file )
+    data = filter_data( data, min_item_support, min_session_length )
+    split_from_test_date( data, path_proc+file, test_date, days_train, days_test, new_items)
 
 #preprocessing from original gru4rec
 def preprocess_org( path=DATA_PATH, file=DATA_FILE, path_proc=DATA_PATH_PROCESSED, min_item_support=MIN_ITEM_SUPPORT, min_session_length=MIN_SESSION_LENGTH ):
@@ -231,7 +242,49 @@ def split_data( data, output_file, days_test ) :
     train.to_csv(output_file + '_train_full.txt', sep='\t', index=False)
     print('Test set\n\tEvents: {}\n\tSessions: {}\n\tItems: {}'.format(len(test), test.SessionId.nunique(), test.ItemId.nunique()))
     test.to_csv(output_file + '_test.txt', sep='\t', index=False)
+
+
+def split_from_test_date( data, output_file, test_date, days_train, days_test, new_items=None ) :
     
+    test_from = datetime.strptime(test_date + ' 00:00:00', '%Y-%m-%d %H:%M:%S')
+    test_until = test_from + timedelta(days_test)
+    train_from  = test_from - timedelta(days_train)
+    valid_from = test_from - timedelta(days_test)
+    
+    session_max_times = data.groupby('SessionId').Time.max()
+    session_train = session_max_times[ (session_max_times >= train_from.timestamp()) & (session_max_times < test_from.timestamp()) ].index
+    session_test = session_max_times[ (session_max_times >= test_from.timestamp()) & (session_max_times < test_until.timestamp()) ].index
+    train = data[np.in1d(data.SessionId, session_train)]
+    test = data[np.in1d(data.SessionId, session_test)]
+    
+    item_list = train.ItemId.unique().tolist()
+    if new_items is not None:
+        item_list += new_items
+    test = test[test.ItemId.isin(item_list)]
+    
+    tslength = test.groupby('SessionId').size()
+    test = test[np.in1d(test.SessionId, tslength[tslength>=2].index)]
+    print('Full train set\n\tEvents: {}\n\tSessions: {}\n\tItems: {}'.format(len(train), train.SessionId.nunique(), train.ItemId.nunique()))
+    train.to_csv(output_file + '_train_full.txt', sep='\t', index=False)
+    print('Test set\n\tEvents: {}\n\tSessions: {}\n\tItems: {}'.format(len(test), test.SessionId.nunique(), test.ItemId.nunique()))
+    test.to_csv(output_file + '_test.txt', sep='\t', index=False)
+    
+    session_train = session_max_times[ (session_max_times >= train_from.timestamp()) & (session_max_times < valid_from.timestamp()) ].index
+    session_valid = session_max_times[ (session_max_times >= valid_from.timestamp()) & (session_max_times < test_from.timestamp()) ].index
+    train_tr = train[np.in1d(train.SessionId, session_train)]
+    valid = train[np.in1d(train.SessionId, session_valid)]
+    valid = valid[np.in1d(valid.ItemId, train_tr.ItemId)]
+    tslength = valid.groupby('SessionId').size()
+    valid = valid[np.in1d(valid.SessionId, tslength[tslength >= 2].index)]
+    print('Train set\n\tEvents: {}\n\tSessions: {}\n\tItems: {}'.format(len(train_tr), train_tr.SessionId.nunique(),
+                                                                        train_tr.ItemId.nunique()))
+    train_tr.to_csv(output_file + '_train_tr.txt', sep='\t', index=False)
+    print('Validation set\n\tEvents: {}\n\tSessions: {}\n\tItems: {}'.format(len(valid), valid.SessionId.nunique(),
+                                                                             valid.ItemId.nunique()))
+    valid.to_csv(output_file + '_train_valid.txt', sep='\t', index=False)
+    
+    print('{} / {} / {}'.format(train_from.date(), valid_from.date(), test_from.date()))
+
     
     
 def slice_data( data, output_file, num_slices, days_offset, days_shift, days_train, days_test ): 
