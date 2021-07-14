@@ -23,7 +23,7 @@ def mean_pool(inputs, sequence_length=None, axis=1):
     if sequence_length is None:
         return tf.reduce_mean(inputs, axis)
     else:
-        return tf.div(tf.reduce_sum(inputs, axis), sequence_length)
+        return tf.truediv(tf.reduce_sum(inputs, axis), sequence_length)
 
 
 def max_pool(inputs, axis=1):

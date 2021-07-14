@@ -24,6 +24,7 @@ mid_rsc15_4_emb_dict = "rsc15_4_emb_dict.data"
 mid_rsc15_64_emb_dict = "rsc15_64_emb_dict.data"
 mid_cikm16_emb_dict = "cikm16_emb_dict.data"
 
+tf.compat.v1.disable_eager_execution()
 
 class Seq2SeqAttNN(NN):
     """
@@ -307,13 +308,13 @@ class Seq2SeqAttNN(NN):
         build the MemNN model
         '''
         # the input.
-        self.inputs = tf.placeholder(
+        self.inputs = tf.compat.v1.placeholder(
             tf.int32,
             [None, None],
             name="inputs"
         )
 
-        self.last_inputs = tf.placeholder(
+        self.last_inputs = tf.compat.v1.placeholder(
             tf.int32,
             [None],
             name="last_inputs"
@@ -321,13 +322,13 @@ class Seq2SeqAttNN(NN):
 
         batch_size = tf.shape(self.inputs)[0]
 
-        self.sequence_length = tf.placeholder(
+        self.sequence_length = tf.compat.v1.placeholder(
             tf.int64,
             [None],
             name='sequence_length'
         )
 
-        self.lab_input = tf.placeholder(
+        self.lab_input = tf.compat.v1.placeholder(
             tf.int32,
             [None],
             name="lab_input"
@@ -345,7 +346,7 @@ class Seq2SeqAttNN(NN):
             dtype=tf.float32,
             trainable=False
         )
-        self.embe_dict *= self.pe_mask
+        self.embe_dict = self.embe_dict * self.pe_mask
 
         sent_bitmap = tf.ones_like(tf.cast(self.inputs, tf.float32))
 
@@ -373,12 +374,12 @@ class Seq2SeqAttNN(NN):
         self.alph = tf.reshape(alph, [batch_size, 1, -1])
 
         self.w1 = tf.Variable(
-            tf.random_normal([self.edim, self.edim], stddev=self.stddev),
+            tf.random.normal([self.edim, self.edim], stddev=self.stddev),
             trainable=True
         )
 
         self.w2 = tf.Variable(
-            tf.random_normal([self.edim, self.edim], stddev=self.stddev),
+            tf.random.normal([self.edim, self.edim], stddev=self.stddev),
             trainable=True
         )
         attout = tf.tanh(tf.matmul(attout, self.w1))
@@ -391,7 +392,7 @@ class Seq2SeqAttNN(NN):
         self.loss = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=sco_mat, labels=self.lab_input)
 
         # the optimize.
-        self.params = tf.trainable_variables()
+        self.params = tf.compat.v1.trainable_variables()
         self.optimize = super(Seq2SeqAttNN, self).optimize_normal(
             self.loss, self.params)
 
@@ -410,15 +411,15 @@ class Seq2SeqAttNN(NN):
             # build model
             self.build_model()
             if self.is_save or not self.is_train:
-                self.saver = tf.train.Saver(max_to_keep=30)
+                self.saver = tf.compat.v1.train.Saver(max_to_keep=30)
             else:
                 self.saver = None
             # run
 
-            config = tf.ConfigProto()
+            config = tf.compat.v1.ConfigProto()
             config.gpu_options.allow_growth = True
-            self.sess = tf.Session(config=config)
-            self.sess.run(tf.global_variables_initializer())
+            self.sess = tf.compat.v1.Session(config=config)
+            self.sess.run(tf.compat.v1.global_variables_initializer())
             if self.datas == "cikm16":
                 self.train(self.train_data, self.saver, threshold_acc=self.cikm_threshold_acc)
             else:

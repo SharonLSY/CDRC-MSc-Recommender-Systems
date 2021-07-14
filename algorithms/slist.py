@@ -284,7 +284,10 @@ class SLIST:
         series = pd.Series(data=preds, index=predict_for_item_ids)
 
         series = series / series.max()
-
+        
+        # remove current item from series of prediction
+        series.drop(labels=[input_item_id])
+        
         return series
 
     # 필수

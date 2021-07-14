@@ -16,14 +16,14 @@ import evaluation.loader as dl
 from builtins import Exception
 import pickle
 import dill
-from telegram.ext.updater import Updater
-from telegram.ext.commandhandler import CommandHandler
+# from telegram.ext.updater import Updater
+# from telegram.ext.commandhandler import CommandHandler
 import telegram
 import random
 import gc
 
 # telegram notificaitons
-NOTIFY = True
+NOTIFY = False
 TELEGRAM_STATUS = False
 if TELEGRAM_STATUS:
     updater = Updater(BOT_TOKEN)  # , use_context=True

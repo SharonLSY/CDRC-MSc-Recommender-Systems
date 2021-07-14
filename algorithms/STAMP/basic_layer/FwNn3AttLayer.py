@@ -51,7 +51,7 @@ class FwNnAttLayer(object):
         )
         # version 2 start
         self.wline_ca = wline_att_ca or tf.Variable(
-            tf.random_normal([self.edim, 1], stddev=stddev),
+            tf.random.normal([self.edim, 1], stddev=stddev),
             trainable=True
         )
         # version 2 end

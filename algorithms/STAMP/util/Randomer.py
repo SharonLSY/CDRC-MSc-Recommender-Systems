@@ -5,7 +5,7 @@ class Randomer(object):
 
     @staticmethod
     def random_normal(wshape):
-        return tf.random_normal(wshape, stddev=Randomer.stddev)
+        return tf.random.normal(wshape, stddev=Randomer.stddev)
 
     @staticmethod
     def set_stddev(sd):
