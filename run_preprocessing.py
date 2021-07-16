@@ -10,7 +10,7 @@ preprocessing method ["info","org","days_test","slice"]
     days_test: adapted from gru4rec (last N days => test set)
     slice: new (create multiple train-test-combinations with a window approach  
     buys: load buys and safe file to prepared
-    test_date: splits data based on test_date and works backwards to obtain training set
+    test_date: splits data based on test_date and works backwards to obtain training set based on defined number of training days
 '''
 METHOD = "test_date"
 
