@@ -2,7 +2,7 @@ type: opt # single|window, maybe add opt
 key: opt_models #added to the csv names
 evaluation: evaluation #evaluation|evaluation_last|evaluation_multiple
 data:
-  name: test #added in the end of the csv names
+  name: opt_models #added in the end of the csv names
   folder: ./data/prepared/14072021/
   prefix: test
   #opts: {sessions_test: 100}

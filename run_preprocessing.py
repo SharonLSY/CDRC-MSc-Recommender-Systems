@@ -45,7 +45,7 @@ slicing default config
 NUM_SLICES = 5
 DAYS_OFFSET = 0 #number of days the training start date is shifted after creating one slice
 #each slice consists of...
-DAYS_TRAIN = 90
+DAYS_TRAIN = 30
 DAYS_TEST = 1
 DAYS_SHIFT = DAYS_TRAIN + DAYS_TEST
 
