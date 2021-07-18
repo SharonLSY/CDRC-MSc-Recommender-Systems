@@ -12,8 +12,10 @@ from time import time
 from sklearn.preprocessing import normalize
 from tqdm import tqdm
 
+from utils.knn_utils import *
 
-class SLIST:
+
+class SLIST_ext:
     '''
     SLIST(reg=10)
 
@@ -25,6 +27,7 @@ class SLIST:
 
     # Must need
     def __init__(self, reg=10, alpha=0.5, session_weight=-1, train_weight=-1, predict_weight=-1,
+                 new_items_file=None, prod2vec_file=None, n_neighbors=500, knn_metric='manhatten',
                  direction='part', normalize='l1', epsilon=10.0, session_key='SessionId', item_key='ItemId',
                  verbose=False):
         self.reg = reg
@@ -38,6 +41,12 @@ class SLIST:
 
         self.session_key = session_key
         self.item_key = item_key
+        
+        new_items = pd.read_csv(new_items_file, usecols=[self.item_key], dtype={self.item_key: int})
+        self.new_items = new_items[self.item_key].tolist()
+        self.prod2vec_file = prod2vec_file # assuming prod2vec saved into a csv with item_key as one of the columns
+        self.n_neighbors = n_neighbors
+        self.knn_metric = knn_metric
 
         # updated while recommending
         self.session = -1
@@ -65,6 +74,7 @@ class SLIST:
 
         # make new item ids(1 ~ #items)
         itemids = data[self.item_key].unique()
+        self.new_items = list(set([i for i in self.new_items if i not in itemids])) # sanity cleaning
         self.n_items = len(itemids)
         self.itemidmap = pd.Series(data=np.arange(self.n_items), index=itemids)
         data = pd.merge(data, pd.DataFrame({self.item_key: itemids, 'ItemIdx': self.itemidmap[itemids].values}), on=self.item_key, how='inner')
@@ -111,6 +121,26 @@ class SLIST:
         else:
             self.enc_w = P @ input_matrix.transpose().dot(W2).dot(target_matrix).toarray()
 
+        ## KNN augmentation for self.enc_w
+        prod2vec_matrix = pd.read_csv(self.prod2vec_file, dtype={self.item_key: int})
+        self.new_items = [i for i in self.new_items if i in prod2vec_matrix[self.item_key].tolist()] # ensuring that the new items are in prod2vec matrix
+        
+        print(f'Augmenting {len(self.new_items)} items')
+        
+        full_item_list = list(set(list(itemids) + list(self.new_items)))
+        prod2vec_matrix = prod2vec_matrix.loc[prod2vec_matrix[self.item_key].isin(full_item_list),:].reset_index(drop=True)
+        prod2vec_map = pd.Series(data=np.arange(prod2vec_matrix.shape[0]), index=prod2vec_matrix[self.item_key])
+        prod2vec_matrix.drop([self.item_key], axis=1, inplace=True)
+        prod2vec_matrix = np.array(prod2vec_matrix.values)
+        
+        self.enc_w, self.itemidmap = knn_augment(b_mat=self.enc_w, 
+                                                 sim_mat=prod2vec_matrix,
+                                                 sim_item_map=prod2vec_map, 
+                                                 train_item_map=self.itemidmap, 
+                                                 test_items=self.new_items, 
+                                                 data=data,
+                                                 n_neighbors=self.n_neighbors, 
+                                                 metric=self.knn_metric)
 
     def make_train_matrix(self, data, weight_by='SLIT'):
         input_row = []
