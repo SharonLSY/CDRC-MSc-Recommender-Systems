@@ -2,7 +2,7 @@ type: opt # single|window, maybe add opt
 key: opt_models #added to the csv names
 evaluation: evaluation #evaluation|evaluation_last|evaluation_multiple
 data:
-  name: opt_models #added in the end of the csv names
+  name: test #added in the end of the csv names
   folder: ./data/prepared/14072021/
   prefix: test
   #opts: {sessions_test: 100}
@@ -11,9 +11,9 @@ results:
   folder: results/opt_models/
 
 metrics:
-- class: accuracy.HitRate
-  length: [10,20]
 - class: accuracy.MRR
+  length: [20]
+- class: accuracy.HitRate
   length: [10,20]
 - class: coverage.Coverage
   length: [20]
@@ -26,7 +26,7 @@ metrics:
 optimize:
   class: accuracy.MRR
   length: [10]
-  #iterations: 100 #optional
+  iterations: 100 #optional
 
 algorithms:
 - class: gru4rec.gru4rec.GRU4Rec

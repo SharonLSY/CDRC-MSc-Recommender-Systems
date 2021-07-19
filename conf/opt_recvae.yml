@@ -1,0 +1,41 @@
+type: opt # single|window, maybe add opt
+key: opt_recvae #added to the csv names
+evaluation: evaluation #evaluation|evaluation_last|evaluation_multiple
+data:
+  name: test #added in the end of the csv names
+  folder: ./data/prepared/14072021/
+  prefix: test
+  #opts: {sessions_test: 100}
+
+results:
+  folder: results/opt_models/
+
+metrics:
+- class: accuracy.MRR
+  length: [20]
+- class: accuracy.HitRate
+  length: [10,20]
+- class: coverage.Coverage
+  length: [20]
+- class: popularity.Popularity
+  length: [20]
+- class: time_memory_usage.Time_usage_training
+- class: time_memory_usage.Time_usage_testing
+- class: time_memory_usage.Memory_usage
+
+optimize:
+  class: accuracy.MRR
+  length: [10]
+  iterations: 200 #optional
+
+algorithms:
+- class: recvae.model.RecVAE
+  params: {}
+  params_opt:
+    hidden_dim: [200, 500, 800, 1000, 1500, 2000]
+    latent_dim: [20, 50, 80, 100, 200]
+    n_epochs: [50, 100, 150, 200]
+    batch_size: [200, 500, 1000, 2000]
+    gamma: {from: 0.001, to: 0.01, in: 20, type: float}
+    lr: {from: 1e-5, to: 1e-2, in: 10, type: float}
+  key: recvae
