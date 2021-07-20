@@ -6,6 +6,7 @@ import random
 from sklearn.neighbors import NearestNeighbors
 from tqdm import tqdm
 import matplotlib.pyplot as plt
+import seaborn as sns
 
 from algorithms.slist import SLIST
 from trial_knn.knn_utils import *
@@ -79,7 +80,7 @@ for met in ['euclidean' , 'manhatten' , 'chebyshev']:
         print('n_neighbors =', nn)
         for i in tqdm(range(10)):
             n_items = model.n_items
-            test_index = list(set([random.randint(0,n_items-1) for i in range(20)]))
+            test_index = list(set([random.randint(0,n_items-1) for i in range(50)]))
             test_items = [alt_item_map2[i] for i in test_index]
             init_index = [i for i in list(alt_item_map2.keys()) if i not in test_index]
             init_items = [alt_item_map2[i] for i in init_index]
@@ -98,7 +99,7 @@ for met in ['euclidean' , 'manhatten' , 'chebyshev']:
                                    )
             mse_list.append(mse)
         mean_mse.append(np.mean(mse_list))
-    plt.plot(nn_range, mean_mse, label = met)
+    sns.lineplot(x=nn_range, y=mean_mse, label = met)
 
 plt.legend()
 plt.show()

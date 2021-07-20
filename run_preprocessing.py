@@ -20,7 +20,7 @@ data config (all methods)
 PATH = './data/'
 PATH_PROCESSED = './data/prepared/test_date_trial/'
 FILE = 'test'
-NEW_ITEMS_FILE = None #'new_items' # or None
+NEW_ITEMS = True # bool, if True then it keeps items in test set
 
 '''
 org_min_date config
@@ -76,9 +76,9 @@ if __name__ == '__main__':
         pp.preprocess_buys( PATH, FILE, PATH_PROCESSED )
         
     elif METHOD == "test_date":
-        pp.preprocess_from_test_date( PATH, FILE, PATH_PROCESSED, MIN_ITEM_SUPPORT, MIN_SESSION_LENGTH, TEST_DATE, DAYS_TRAIN, DAYS_TEST, NEW_ITEMS_FILE )
+        pp.preprocess_from_test_date( PATH, FILE, PATH_PROCESSED, MIN_ITEM_SUPPORT, MIN_SESSION_LENGTH, TEST_DATE, DAYS_TRAIN, DAYS_TEST, NEW_ITEMS )
     
     else: 
         print( "Invalid method ", METHOD )
         
-    print( "END preproccessing ", (time.perf_counter() - sc), "c ", (time.time() - st), "s" )
+    print( "END preprocessing ", (time.perf_counter() - sc), "c ", (time.time() - st), "s" )

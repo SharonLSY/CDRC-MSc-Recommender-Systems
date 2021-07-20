@@ -740,6 +740,7 @@ def generate_random_params(algorithm):
     if 'params_opt' in algorithm:
         for key, value in algorithm['params_opt'].items():
             space = []
+            
             if type(value) == list:
                 for entry in value:
                     if type(entry) == list:

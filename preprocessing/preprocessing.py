@@ -1,21 +1,22 @@
 import numpy as np
 import pandas as pd
 from datetime import datetime, timezone, timedelta
+import pickle
 
 #data config (all methods)
 DATA_PATH = './data/'
-DATA_PATH_PROCESSED = './data/prepared/06072021/'
+DATA_PATH_PROCESSED = './data/prepared/test_date_trial/'
 DATA_FILE = 'test'
+NEW_ITEMS=True
 SESSION_LENGTH = 30 * 60 # 30 min -- if next event is > 30 min away, then separate session
 
 #filtering config (all methods)
 MIN_SESSION_LENGTH = 2
 MIN_ITEM_SUPPORT = 5
-NEW_ITEMS = [] # ItemId for new items (i.e. items not in train set, for item cold start evaluation)
 
 #min date config
 MIN_DATE = '2014-04-01'
-TEST_DATE = '2020-07-14'
+TEST_DATE = '2020-04-15'
 
 #days test default config 
 DAYS_TEST = 1
@@ -23,7 +24,7 @@ DAYS_TEST = 1
 #slicing default config
 NUM_SLICES = 5 #10
 DAYS_OFFSET = 0
-DAYS_TRAIN = 90
+DAYS_TRAIN = 3
 DAYS_TEST = 1
 DAYS_SHIFT = DAYS_TRAIN + DAYS_TEST
 
@@ -33,8 +34,10 @@ def preprocess_from_test_date(path=DATA_PATH, file=DATA_FILE, path_proc=DATA_PAT
                               test_date=TEST_DATE, days_train = DAYS_TRAIN, days_test=DAYS_TEST,
                               new_items=NEW_ITEMS):
     data, buys = load_data( path+file )
-    data = filter_data( data, min_item_support, min_session_length )
-    split_from_test_date( data, path_proc+file, test_date, days_train, days_test, new_items)
+    # data = filter_data( data, min_item_support, min_session_length )
+    split_from_test_date( data, path_proc+file, test_date, 
+                         min_item_support, min_session_length,
+                         days_train, days_test, new_items)
 
 #preprocessing from original gru4rec
 def preprocess_org( path=DATA_PATH, file=DATA_FILE, path_proc=DATA_PATH_PROCESSED, min_item_support=MIN_ITEM_SUPPORT, min_session_length=MIN_SESSION_LENGTH ):
@@ -244,7 +247,9 @@ def split_data( data, output_file, days_test ) :
     test.to_csv(output_file + '_test.txt', sep='\t', index=False)
 
 
-def split_from_test_date( data, output_file, test_date, days_train, days_test, new_items=None ) :
+def split_from_test_date(data, output_file, test_date, 
+                         min_item_support, min_session_length,
+                         days_train, days_test, new_items=False ) :
     
     test_from = datetime.strptime(test_date + ' 00:00:00', '%Y-%m-%d %H:%M:%S')
     test_until = test_from + timedelta(days_test)
@@ -252,15 +257,26 @@ def split_from_test_date( data, output_file, test_date, days_train, days_test, n
     valid_from = test_from - timedelta(days_test)
     
     session_max_times = data.groupby('SessionId').Time.max()
+    session_all = session_max_times[ (session_max_times >= train_from.timestamp()) & (session_max_times < test_until.timestamp()) ].index
+    data = data[np.in1d(data.SessionId, session_all)]
+    
+    data = filter_data( data, min_item_support, min_session_length )
+    
     session_train = session_max_times[ (session_max_times >= train_from.timestamp()) & (session_max_times < test_from.timestamp()) ].index
     session_test = session_max_times[ (session_max_times >= test_from.timestamp()) & (session_max_times < test_until.timestamp()) ].index
     train = data[np.in1d(data.SessionId, session_train)]
     test = data[np.in1d(data.SessionId, session_test)]
     
-    item_list = train.ItemId.unique().tolist()
-    if new_items is not None:
-        item_list += new_items
-    test = test[test.ItemId.isin(item_list)]
+    if new_items:
+        item_list = data.ItemId.unique().tolist()
+        # write list into txt file
+        with open(output_file + '_full_item_list.txt', 'wb') as file:
+            pickle.dump(item_list, file)
+        print(f'Kept {len(item_list) - train.ItemId.nunique()} new items')
+    
+    else:
+        item_list = train.ItemId.unique().tolist()
+        test = test[test.ItemId.isin(item_list)]
     
     tslength = test.groupby('SessionId').size()
     test = test[np.in1d(test.SessionId, tslength[tslength>=2].index)]

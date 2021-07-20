@@ -19,8 +19,8 @@ def knn_augment(b_mat, sim_mat, sim_item_map, train_item_map, test_items, data,
     inputs:
         b_mat: 2D array of matrix B, trained on training set
         sim_mat: 2D array of features matrix
-        sim_item_map: dict of ItemId and corresponding index for sim_mat
-        train_item_map: dict of ItemId and corresponding index for b_mat
+        sim_item_map: pd.Series with index ItemId and corresponding index for sim_mat
+        train_item_map: pd.Series with index ItemId and corresponding index for b_mat
         test_items: list, items to augment B matrix
         data: training data, for calculation of popularity
         
@@ -41,11 +41,16 @@ def knn_augment(b_mat, sim_mat, sim_item_map, train_item_map, test_items, data,
     dists = []
     indexes = []
     pops = []
+    
+    # sim_item_map = dict(zip(sim_item_map.index.tolist(), sim_item_map.values.tolist()))
+    # train_item_map = dict(zip(train_item_map.index.tolist(), train_item_map.values.tolist()))
+    
     init_items = list(train_item_map.keys())
+    init_items = [i for i in init_items if i in sim_item_map.index.tolist()]
     train_item_map2 = dict(map(reversed, train_item_map.items()))
     n_init = b_mat.shape[0]
-    
-    similarity_init = sim_mat[:, sim_item_map[init_items]][sim_item_map[init_items],:].copy()
+
+    similarity_init = sim_mat[:, sim_item_map.loc[init_items]][sim_item_map.loc[init_items],:].copy()
     neigh = NearestNeighbors(n_neighbors=n_neighbors)
     neigh.fit(similarity_init)
     
@@ -66,8 +71,9 @@ def knn_augment(b_mat, sim_mat, sim_item_map, train_item_map, test_items, data,
                           'Views': pops})
     nn_df = nn_df.sort_values(by='Views', ascending=False, ignore_index=True)
     
-    augmented_items = init_items.copy()
+    augmented_items = train_item_map.index.tolist()
     augmented_b = b_mat.copy()
+    
     if method == 'average':
         for i in range(len(test_items)):
             augmented_items += [nn_df.ItemId[i]]
@@ -79,6 +85,7 @@ def knn_augment(b_mat, sim_mat, sim_item_map, train_item_map, test_items, data,
             diag_entry = np.mean([augmented_b[j,j] for j in nn_df.Indexes[i]])
             augmented_col = np.hstack((augmented_col, [diag_entry]))
             augmented_b = np.hstack((augmented_b, augmented_col.reshape(-1,1)))
+    
     elif method == 'weighted':
         for i in range(len(test_items)):
             augmented_items += [nn_df.ItemId[i]]
@@ -102,7 +109,7 @@ def knn_augment(b_mat, sim_mat, sim_item_map, train_item_map, test_items, data,
             augmented_col /= total_weights
             augmented_b = np.hstack((augmented_b, augmented_col.reshape(-1,1)))
     
-    augmented_item_map = dict(zip(augmented_items, range(len(augmented_items))))
+    augmented_item_map = pd.Series(data=np.arange(len(augmented_items)), index=augmented_items)
     # augmented_item_map2 = dict(map(reversed, augmented_item_map.items()))
     
     if gt_mat is None or gt_item_map is None:

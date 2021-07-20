@@ -348,6 +348,11 @@ class RecVAE(nn.Module):
         series = pd.Series( data=recommendations, index=self.itemidmap.index )
         
         return series
+
+    def clear(self):
+        for layer in self.vae_model.children():
+           if hasattr(layer, 'reset_parameters'):
+               layer.reset_parameters()
         
     def filter_data(self, data, min_uc=5, min_sc=0):
         # Only keep the triplets for items which were clicked on by at least min_sc users. 
