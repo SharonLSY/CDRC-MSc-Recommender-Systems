@@ -16,6 +16,8 @@ def knn_augment(b_mat, sim_mat, sim_item_map, train_item_map, test_items, data,
     Identifies KNN for test items and iteratively augments matrix B based on
     popularity of KNN (based on number of views in training set)
     
+    --------------------------
+    
     inputs:
         b_mat: 2D array of matrix B, trained on training set
         sim_mat: 2D array of features matrix
@@ -55,7 +57,8 @@ def knn_augment(b_mat, sim_mat, sim_item_map, train_item_map, test_items, data,
     neigh.fit(similarity_init)
     
     for test_item in test_items:
-        test_point = sim_mat[sim_item_map[test_item], sim_item_map[init_items]].reshape(1,-1)
+        test_point = sim_mat[sim_item_map.loc[test_item], sim_item_map.loc[init_items]]
+        test_point = test_point.reshape(1,-1)
         dist, nn_idx = neigh.kneighbors(test_point)
         dist, nn_idx = dist.tolist()[0], nn_idx.tolist()[0]
         nn_items = [train_item_map2[i] for i in nn_idx]
@@ -95,7 +98,7 @@ def knn_augment(b_mat, sim_mat, sim_item_map, train_item_map, test_items, data,
             total_weights = 0
             
             for j in range(n_neighbors):    
-                weight = 1/nn_df.Distances[i][j]
+                weight = 1/max(nn_df.Distances[i][j], 1e-10) # prevent division by zero
                 nn_idx = nn_df.Indexes[i][j]
                 total_weights += weight
                 diag_entry += weight * augmented_b[nn_idx, nn_idx]

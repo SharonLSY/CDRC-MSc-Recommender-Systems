@@ -80,6 +80,7 @@ for met in ['euclidean' , 'manhatten' , 'chebyshev']:
             mse_list.append(mse)
         mean_mse.append(np.mean(mse_list))
     sns.lineplot(x=nn_range, y=mean_mse, label = met)
-
+plt.xlabel('Number of Neighbors')
+plt.ylabel('Mean Squared Error')
 plt.legend()
 plt.savefig('./plots/knn_grid_search.png', dpi=300, transparent=False, bbox_inches='tight')
