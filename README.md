@@ -1,4 +1,4 @@
-# CDRC-MSc---Recommender-Systems
+# CDRC-MSc-Recommender-Systems
  Recommender Systems for CDRC MSc
 
 
