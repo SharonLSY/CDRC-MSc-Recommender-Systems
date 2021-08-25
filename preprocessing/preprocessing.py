@@ -2,13 +2,17 @@ import numpy as np
 import pandas as pd
 from datetime import datetime, timezone, timedelta
 import pickle
+import os
+from random import sample, seed
 
 #data config (all methods)
 DATA_PATH = './data/'
-DATA_PATH_PROCESSED = './data/prepared/test_date_trial/'
+DATA_PATH_PROCESSED = './data/prepared/'
 DATA_FILE = 'test'
 NEW_ITEMS=True
 SESSION_LENGTH = 30 * 60 # 30 min -- if next event is > 30 min away, then separate session
+RANDOM_SAMPLE = None
+LIMIT_BEAUTY=True
 
 #filtering config (all methods)
 MIN_SESSION_LENGTH = 2
@@ -16,7 +20,7 @@ MIN_ITEM_SUPPORT = 5
 
 #min date config
 MIN_DATE = '2014-04-01'
-TEST_DATE = '2020-04-15'
+TEST_DATE = '2021-07-01'
 
 #days test default config 
 DAYS_TEST = 1
@@ -24,20 +28,28 @@ DAYS_TEST = 1
 #slicing default config
 NUM_SLICES = 5 #10
 DAYS_OFFSET = 0
-DAYS_TRAIN = 3
-DAYS_TEST = 1
+DAYS_TRAIN = 30
+DAYS_TEST = 3
 DAYS_SHIFT = DAYS_TRAIN + DAYS_TEST
+
+seed(123)
 
 # preprocessing from test date
 def preprocess_from_test_date(path=DATA_PATH, file=DATA_FILE, path_proc=DATA_PATH_PROCESSED, 
                               min_item_support=MIN_ITEM_SUPPORT, min_session_length=MIN_SESSION_LENGTH, 
                               test_date=TEST_DATE, days_train = DAYS_TRAIN, days_test=DAYS_TEST,
-                              new_items=NEW_ITEMS):
-    data, buys = load_data( path+file )
+                              new_items=NEW_ITEMS, random_sample=None, limit_beauty=False
+                              ):
+    
+    
+    seed(123)
+    os.makedirs(path_proc, exist_ok=True) # make directory if path doesn't exist
+    
+    data, buys = load_data( path+file, limit_beauty )
     # data = filter_data( data, min_item_support, min_session_length )
     split_from_test_date( data, path_proc+file, test_date, 
                          min_item_support, min_session_length,
-                         days_train, days_test, new_items)
+                         days_train, days_test, new_items, random_sample)
 
 #preprocessing from original gru4rec
 def preprocess_org( path=DATA_PATH, file=DATA_FILE, path_proc=DATA_PATH_PROCESSED, min_item_support=MIN_ITEM_SUPPORT, min_session_length=MIN_SESSION_LENGTH ):
@@ -94,15 +106,29 @@ def preprocess_buys( path=DATA_PATH, file=DATA_FILE, path_proc=DATA_PATH_PROCESS
     data, buys = load_data( path+file )
     store_buys(buys, path_proc+file)
     
-def load_data( file ) : 
+def load_data( file, limit_beauty=False ) : 
     
     #load csv
-    data = pd.read_parquet( file+'.parquet', engine='auto', 
-                           columns=['event_time', 'user_id', 'event_type', 'product_id'],
-                           )
+    data = pd.read_csv( file+'.csv', 
+                       dtype={'product_id':'category'}
+                       )
     
+    if limit_beauty:
+        meta = pd.read_csv('data/item_dims1.csv', usecols = ['sap_code_var_p','item_hierarchy2_description'])
+        meta2 = pd.read_csv('data/item_dims2.csv', usecols = ['sap_code_var_p','item_hierarchy2_description'])
+        meta = pd.concat([meta, meta2], axis=0).drop_duplicates().reset_index(drop=True)
+        del meta2
+        beauty_products = meta.loc[meta.item_hierarchy2_description == 'Beauty','sap_code_var_p'].unique()
+        data = data.loc[data.product_id.isin(beauty_products)]
+    
+#    data.columns = [str(col).lower() for col in data.columns]
+    data['Time'] = data['browse_date'] + ' ' + data['browse_time'] + ' UTC'
+
     #specify header names
-    data.columns = ['Time','UserId','Type','ItemId']
+    data.rename(columns={'cookie_id':'UserId','product_id':'ItemId'}, inplace=True)
+    print(data.columns)
+    data = data.loc[:,['Time','UserId','ItemId']]
+    
     
     data['Time'] = pd.to_datetime(data['Time'], format='%Y-%m-%d %H:%M:%S UTC', errors='ignore')
     # data = data.loc[(data.Time >= '2020-02-20')]
@@ -134,9 +160,10 @@ def load_data( file ) :
     
     data.sort_values( ['SessionId','Time'], ascending=True, inplace=True )
     
-    cart = data[data.Type == 'purchase']
-    #data = data[data.Type == 'cart']
-    del data['Type']
+    # cart = data[data.Type == 'purchase']
+    # data = data[data.Type == 'cart']
+    # del data['Type']
+    cart=None
     
     
     #output
@@ -160,7 +187,9 @@ def filter_data( data, min_item_support=MIN_ITEM_SUPPORT, min_session_length=MIN
     # filter item support
     item_supports = data.groupby('ItemId').size()
     print(f'Removed {item_supports[ item_supports < min_item_support ].shape[0]} items')
-    data = data[np.in1d(data.ItemId, item_supports[ item_supports>= min_item_support ].index)]
+    item_supports = item_supports[ item_supports>= min_item_support ].index.unique()
+    #data = data[np.in1d(data.ItemId, item_supports[ item_supports>= min_item_support ].index)]
+    data = data[data.ItemId.isin(item_supports)]
     
     # filter session length
     session_lengths = data.groupby('SessionId').size()
@@ -249,7 +278,8 @@ def split_data( data, output_file, days_test ) :
 
 def split_from_test_date(data, output_file, test_date, 
                          min_item_support, min_session_length,
-                         days_train, days_test, new_items=False ) :
+                         days_train, days_test, new_items=False,
+                         random_sample=None) :
     
     test_from = datetime.strptime(test_date + ' 00:00:00', '%Y-%m-%d %H:%M:%S')
     test_until = test_from + timedelta(days_test)
@@ -266,6 +296,16 @@ def split_from_test_date(data, output_file, test_date,
     session_test = session_max_times[ (session_max_times >= test_from.timestamp()) & (session_max_times < test_until.timestamp()) ].index
     train = data[np.in1d(data.SessionId, session_train)]
     test = data[np.in1d(data.SessionId, session_test)]
+    
+    if random_sample != None:
+        print(f'Sampling {random_sample} of all sessions')
+        session_train = sample(train.SessionId.unique().tolist(), int(random_sample*train.SessionId.nunique()))
+        session_test = sample(test.SessionId.unique().tolist(), int(random_sample*test.SessionId.nunique()))
+        train = train[np.in1d(train.SessionId, session_train)]
+        test = test[np.in1d(test.SessionId, session_test)]
+        
+    res = get_stats( pd.concat([train, test], ignore_index=True) )
+    res.to_csv(output_file+'_stats.csv', index=False)
     
     if new_items:
         item_list = data.ItemId.unique().tolist()
@@ -289,7 +329,8 @@ def split_from_test_date(data, output_file, test_date,
     session_valid = session_max_times[ (session_max_times >= valid_from.timestamp()) & (session_max_times < test_from.timestamp()) ].index
     train_tr = train[np.in1d(train.SessionId, session_train)]
     valid = train[np.in1d(train.SessionId, session_valid)]
-    valid = valid[np.in1d(valid.ItemId, train_tr.ItemId)]
+    if new_items is False:
+        valid = valid[valid.ItemId.isin(train_tr.ItemId.unique())]
     tslength = valid.groupby('SessionId').size()
     valid = valid[np.in1d(valid.SessionId, tslength[tslength >= 2].index)]
     print('Train set\n\tEvents: {}\n\tSessions: {}\n\tItems: {}'.format(len(train_tr), train_tr.SessionId.nunique(),
@@ -379,6 +420,31 @@ def split_data_slice( data, output_file, slice_id, days_offset, days_train, days
 def store_buys( buys, target ):
     buys.to_csv( target + '_buys.txt', sep='\t', index=False )
 
+def get_stats( dataframe ):
+    print( 'get_stats ' )
+    
+    res = {}
+    
+    res['STATS'] = ['STATS']
+#    res['name'] = [name]
+    res['actions'] = [len(dataframe)]
+    res['items'] = [ dataframe.ItemId.nunique() ]
+    res['sessions'] = [ dataframe.SessionId.nunique() ]
+    res['time_start'] = [ dataframe.Time.min() ]
+    res['time_end'] = [ dataframe.Time.max() ]
+    
+    res['unique_per_session'] = dataframe.groupby('SessionId')['ItemId'].nunique().mean()
+    
+    res = pd.DataFrame(res)
 
-
+    res['actions_per_session'] = res['actions'] / res['sessions']
+    res['actions_per_items'] = res['actions'] / res['items']
+    #res['sessions_per_action'] = res['sessions'] / res['actions']
+    res['sessions_per_items'] = res['sessions'] / res['items']
+    #res['items_per_actions'] = res['items'] / res['actions']
+    res['items_per_session'] = res['items'] / res['sessions']
+    res['span'] = res['time_end'] - res['time_start']
+    res['days'] = res['span'] / 60 / 60 / 24
+    
+    return res
 

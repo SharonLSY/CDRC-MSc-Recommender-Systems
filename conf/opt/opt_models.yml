@@ -1,11 +1,11 @@
 type: bayopt # single|window, maybe add opt
-key: opt_models #added to the csv names
+key: opt_beauty_models #added to the csv names
 evaluation: evaluation #evaluation|evaluation_last|evaluation_multiple
 data:
-  name: test #added in the end of the csv names
-  folder: ./data/prepared/14072021/
-  prefix: test
-  #opts: {sessions_test: 100}
+  name: opt_beauty_models #added in the end of the csv names
+  folder: ./data/prepared/beauty_models/
+  prefix: browsing_data
+  opts: {sessions_test: 500}
 
 results:
   folder: results/opt_models/
@@ -26,13 +26,14 @@ metrics:
 optimize:
   class: accuracy.MRR
   length: [10]
-  iterations: 100 #optional
+  iterations: 50 #optional
 
 algorithms:
 - class: stan.STAN
-  params: {k: 500, sample_size: 2500}
+  params: {}
   params_opt:
-    #k: {from: 200, to: 2000, in: 10, type: int32}
+    k: [50,100,500,1000]
+    sample_size: [500,1000,2500,5000]
     lambda_spw: {from: 0.125, to: 8, type: float}
     lambda_snh: {from: 1, to: 300, type: float}
     lambda_inh: {from: 0.125, to: 8, type: float}
@@ -40,17 +41,17 @@ algorithms:
 - class: STAMP.model.STAMP.Seq2SeqAttNN
   params: {}
   params_opt:
-    n_epochs: [10,20,30,40,50]
-    decay_rate: {from: 0.0, to: 0.9, in: 10, type: float}
+    n_epochs: {from: 10, to: 30, type: int}
+    decay_rate: {from: 0.0, to: 0.9, type: float}
     init_lr: {from: 0.0001, to: 0.01, type: float}
   key: stamp
 - class: gru4rec.gru4rec.GRU4Rec
   params: {}
   params_opt:
-    loss: ['bpr-max', 'top1-max']
-    final_act: ['elu-0.5','linear']
-    dropout_p_hidden: {from: 0.0, to: 0.9, type: float}
-    momentum: {from: 0.0, to: 0.9, in: 10, type: float}
+    loss: ['bpr-max', 'top1-max'] 
+    final_act: ['elu-0.5','linear'] 
+    dropout_p_hidden: {from: 0.0, to: 0.9, type: float} 
+    momentum: {from: 0.0, to: 0.9, type: float} 
     learning_rate: {from: 0.01, to: 0.5, type: float}
     constrained_embedding: [True,False]
   key: gru4rec
@@ -61,5 +62,15 @@ algorithms:
     direction: ['sr','part','all']
     train_weight: {from: 0.125, to: 8, type: float}
     predict_weight: {from: 0.125, to: 8, type: float}
-    session_weight: {from: 1, to: 300, type: float}
+    session_weight: {from: 1, to: 300, type: int}
   key: slist
+- class: recvae.model.RecVAE
+  params: {}
+  params_opt:
+    hidden_dim: [50, 200, 500, 800, 1000, 1500, 2000]
+    latent_dim: [20, 50, 80, 100, 200]
+#    n_epochs: [50, 100, 200]
+    batch_size: [200, 500, 1000, 2000]
+    gamma: {from: 0.001, to: 0.01, type: float}
+    lr: {from: 0.00001, to: 0.01, type: float}
+  key: recvae

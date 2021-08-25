@@ -53,8 +53,8 @@ def load_data( path, file, rows_train=None, rows_test=None, slice_num=None, dens
         
         if not os.path.isfile( path + file + train_appendix + split + '.txt.'+str( density ) ) :
             
-            train = pd.read_csv(path + file + train_appendix + split + '.txt', sep='\t', dtype={'ItemId':np.int64})
-            test = pd.read_csv(path + file + test_appendix + split + '.txt', sep='\t', dtype={'ItemId':np.int64} )
+            train = pd.read_csv(path + file + train_appendix + split + '.txt', sep='\t', dtype={'ItemId':'category'} )
+            test = pd.read_csv(path + file + test_appendix + split + '.txt', sep='\t', dtype={'ItemId':'category'} )
             
             sessions = train.SessionId.unique() 
             drop_n = round( len(sessions) - (len(sessions) * density) )
@@ -72,14 +72,14 @@ def load_data( path, file, rows_train=None, rows_test=None, slice_num=None, dens
         density_appendix = '.'+str(density)
             
     if( rows_train == None ):
-        train = pd.read_csv(path + file + train_appendix +split+'.txt'+density_appendix, sep='\t', dtype={'ItemId':np.int64})
+        train = pd.read_csv(path + file + train_appendix +split+'.txt'+density_appendix, sep='\t', dtype={'ItemId':'category'})
     else:
-        train = pd.read_csv(path + file + train_appendix +split+'.txt'+density_appendix, sep='\t', dtype={'ItemId':np.int64}, nrows=rows_train)      
+        train = pd.read_csv(path + file + train_appendix +split+'.txt'+density_appendix, sep='\t', dtype={'ItemId':'category'}, nrows=rows_train)      
     
     if( rows_test == None ):
-        test = pd.read_csv(path + file + test_appendix +split+'.txt'+density_appendix, sep='\t', dtype={'ItemId':np.int64} )
+        test = pd.read_csv(path + file + test_appendix +split+'.txt'+density_appendix, sep='\t', dtype={'ItemId':'category'} )
     else :
-        test = pd.read_csv(path + file + test_appendix +split+'.txt'+density_appendix, sep='\t', dtype={'ItemId':np.int64}, nrows=rows_test )
+        test = pd.read_csv(path + file + test_appendix +split+'.txt'+density_appendix, sep='\t', dtype={'ItemId':'category'}, nrows=rows_test )
         
     test = test[np.in1d(test.ItemId, train.ItemId)]
     
@@ -152,8 +152,8 @@ def load_data_session( path, file, sessions_train=None, sessions_test=None, slic
         train_appendix = '_train_tr'
         test_appendix = '_train_valid'
             
-    train = pd.read_csv(path + file + train_appendix +split+'.txt', sep='\t', dtype={'ItemId':np.int64})
-    test = pd.read_csv(path + file + test_appendix +split+'.txt', sep='\t', dtype={'ItemId':np.int64} )
+    train = pd.read_csv(path + file + train_appendix +split+'.txt', sep='\t' )
+    test = pd.read_csv(path + file + test_appendix +split+'.txt', sep='\t' )
         
     if( sessions_train != None ):
         keep = train.sort_values('Time', ascending=False).SessionId.unique()[:(sessions_train-1)]
@@ -161,7 +161,7 @@ def load_data_session( path, file, sessions_train=None, sessions_test=None, slic
         test = test[np.in1d(test.ItemId, train.ItemId)]
     
     if( sessions_test != None ):
-        keep = test.SessionId.unique()[:(sessions_test-1)]
+        keep = test.SessionId.unique()[:(sessions_test)]
         test = test[ np.in1d( test.SessionId, keep ) ]
     
     session_lengths = test.groupby('SessionId').size()

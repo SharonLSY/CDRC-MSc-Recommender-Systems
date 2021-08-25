@@ -1,0 +1,66 @@
+type: bayopt # single|window, maybe add opt
+key: opt_beauty_gru4rec #added to the csv names
+evaluation: evaluation #evaluation|evaluation_last|evaluation_multiple
+data:
+  name: opt_beauty_gru4rec #added in the end of the csv names
+  folder: ./data/prepared/beauty_models/
+  prefix: browsing_data
+#  opts: {sessions_test: 500}
+
+results:
+  folder: results/opt_gru4rec/
+
+metrics:
+- class: accuracy.MRR
+  length: [20]
+- class: accuracy.HitRate
+  length: [10,20]
+- class: coverage.Coverage
+  length: [20]
+- class: popularity.Popularity
+  length: [20]
+- class: time_memory_usage.Time_usage_training
+- class: time_memory_usage.Time_usage_testing
+- class: time_memory_usage.Memory_usage
+
+optimize:
+  class: accuracy.MRR
+  length: [10]
+  iterations: 50 #optional
+
+algorithms:
+#- class: stan.STAN
+#  params: {}
+#  params_opt:
+#    k: [50,100,500,1000]
+#    sample_size: [500,1000,2500,5000]
+#    lambda_spw: {from: 0.125, to: 8, type: float}
+#    lambda_snh: {from: 1, to: 300, type: float}
+#    lambda_inh: {from: 0.125, to: 8, type: float}
+#  key: stan
+#- class: STAMP.model.STAMP.Seq2SeqAttNN
+#  params: {}
+#  params_opt:
+#    n_epochs: {from: 10, to: 30, type: int}
+#    decay_rate: {from: 0.0, to: 0.9, type: float}
+#    init_lr: {from: 0.0001, to: 0.01, type: float}
+#  key: stamp
+- class: gru4rec.gru4rec.GRU4Rec
+  params: {}
+  params_opt:
+    loss: ['bpr-max', 'top1-max'] 
+    final_act: ['elu-0.5','linear'] 
+    dropout_p_hidden: {from: 0.0, to: 0.9, type: float} 
+    momentum: {from: 0.0, to: 0.9, type: float} 
+    learning_rate: {from: 0.01, to: 0.5, type: float}
+    constrained_embedding: [True,False]
+  key: gru4rec
+#- class: slist.SLIST
+#  params: {reg: 10}
+#  params_opt:
+#    alpha: {from: 0.1, to: 0.9, type: float}
+#    direction: ['sr','part','all']
+#    train_weight: {from: 0.125, to: 8, type: float}
+#    predict_weight: {from: 0.125, to: 8, type: float}
+#    session_weight: {from: 1, to: 300, type: int}
+#  key: slist

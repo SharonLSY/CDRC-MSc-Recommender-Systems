@@ -7,7 +7,7 @@ import pickle
 
 from scipy import sparse
 from scipy.sparse.linalg import inv
-from scipy.sparse import csr_matrix, csc_matrix, vstack
+from scipy.sparse import csr_matrix, csc_matrix, vstack, load_npz
 from time import time
 from sklearn.preprocessing import normalize
 from tqdm import tqdm
@@ -27,7 +27,7 @@ class SLIST_ext:
 
     # Must need
     def __init__(self, reg=10, alpha=0.5, session_weight=-1, train_weight=-1, predict_weight=-1,
-                 prod2vec_file=None, n_neighbors=500, knn_metric='manhatten',
+                 prod2vec_file=None, prod2vec_map = None, n_neighbors=500, knn_metric='manhatten',
                  direction='part', normalize='l1', epsilon=10.0, session_key='SessionId', item_key='ItemId',
                  verbose=False):
         self.reg = reg
@@ -42,7 +42,8 @@ class SLIST_ext:
         self.session_key = session_key
         self.item_key = item_key
         
-        self.prod2vec_file = prod2vec_file # assuming prod2vec saved into a csv with item_key as one of the columns
+        self.prod2vec_file = prod2vec_file
+        self.prod2vec_map = prod2vec_map
         self.n_neighbors = n_neighbors
         self.knn_metric = knn_metric
 
@@ -119,17 +120,15 @@ class SLIST_ext:
             self.enc_w = P @ input_matrix.transpose().dot(W2).dot(target_matrix).toarray()
 
         ## KNN augmentation for self.enc_w
-        prod2vec_matrix = pd.read_csv(self.prod2vec_file, dtype={self.item_key: int})
         
-        self.new_items = [i for i in test[self.item_key] if i not in itemids]
+        self.new_items = [i for i in test[self.item_key].unique() if i not in itemids]
         self.all_items = self.new_items + itemids
         
-        prod2vec_matrix = prod2vec_matrix.loc[prod2vec_matrix[self.item_key].isin(self.all_items),:].reset_index(drop=True)
-        prod2vec_map = pd.Series(data=np.arange(prod2vec_matrix.shape[0]), index=prod2vec_matrix[self.item_key])
-        prod2vec_matrix.drop([self.item_key], axis=1, inplace=True)
-        prod2vec_matrix = np.array(prod2vec_matrix.values)
+        prod2vec_matrix = load_npz(self.prod2vec_file)
+        prod2vec_map = pd.read_csv(self.prod2vec_map)
+        prod2vec_map = pd.Series(index = prod2vec_map.ItemId, data = prod2vec_map.ItemIdx.tolist())
         
-        self.new_items = [i for i in self.new_items if i in prod2vec_map.index]
+        self.new_items = [i for i in self.new_items if i in prod2vec_map.index] # filter out new items that are not in item matrix
         print(f'Augmenting {len(self.new_items)} items')
         
         self.enc_w, self.itemidmap = knn_augment(b_mat=self.enc_w, 

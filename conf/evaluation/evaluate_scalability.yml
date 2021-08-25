@@ -1,0 +1,39 @@
+type: single # single|window, maybe add opt
+key: evaluate_scalability #added to the csv names
+evaluation: evaluation #evaluation|evaluation_last|evaluation_multiple
+data:
+  name: evaluate_scalability #added in the end of the csv names
+  folder: ./data/prepared/beauty_models/
+  prefix: browsing_data
+#  opts: {sessions_test: 500}
+
+results:
+  folder: results/evaluate_scalability3/
+#  picke_models: results/models/
+
+metrics:
+- class: accuracy.MRR
+  length: [10,20]
+- class: accuracy.HitRate
+  length: [10,20]
+- class: coverage.Coverage
+  length: [10,20]
+- class: popularity.Popularity
+  length: [10,20]
+- class: time_memory_usage.Time_usage_training
+- class: time_memory_usage.Time_usage_testing
+- class: time_memory_usage.Memory_usage
+
+algorithms:
+- class: stan.STAN
+  params: {k: 100, sample_size: 2500, lambda_spw: 6.875016419647753, lambda_snh: 299.1092907429366, lambda_inh: 6.9533684959560205}
+  key: stan
+- class: STAMP.model.STAMP.Seq2SeqAttNN
+  params: {n_epochs: 22, decay_rate: 0.4834895639299987, init_lr: 0.0006168884387397839}
+  key: stamp
+- class: gru4rec.gru4rec.GRU4Rec
+  params: {loss: 'bpr-max', final_act: 'linear', dropout_p_hidden: 0.3125848000737726, momentum: 0.0, learning_rate: 0.06512001440525098, constrained_embedding: True}
+  key: gru4rec
+- class: slist.SLIST
+  params: {reg: 10, direction: 'all', alpha: 0.1, train_weight: 0.125, predict_weight: 0.7673070073686803, session_weight: 300}
+  key: slist

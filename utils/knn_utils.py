@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 from sklearn.neighbors import NearestNeighbors
+from tqdm import tqdm
 
 def convert_matrix(gt, gt_map, alt_map):
     alt_keys = list(alt_map.keys())
@@ -52,12 +53,12 @@ def knn_augment(b_mat, sim_mat, sim_item_map, train_item_map, test_items, data,
     train_item_map2 = dict(map(reversed, train_item_map.items()))
     n_init = b_mat.shape[0]
 
-    similarity_init = sim_mat[:, sim_item_map.loc[init_items]][sim_item_map.loc[init_items],:].copy()
-    neigh = NearestNeighbors(n_neighbors=n_neighbors)
+    similarity_init = sim_mat[sim_item_map.loc[init_items],:].copy()
+    neigh = NearestNeighbors(n_neighbors=n_neighbors, metric=metric)
     neigh.fit(similarity_init)
     
     for test_item in test_items:
-        test_point = sim_mat[sim_item_map.loc[test_item], sim_item_map.loc[init_items]]
+        test_point = sim_mat[sim_item_map.loc[test_item],:]
         test_point = test_point.reshape(1,-1)
         dist, nn_idx = neigh.kneighbors(test_point)
         dist, nn_idx = dist.tolist()[0], nn_idx.tolist()[0]
@@ -78,7 +79,7 @@ def knn_augment(b_mat, sim_mat, sim_item_map, train_item_map, test_items, data,
     augmented_b = b_mat.copy()
     
     if method == 'average':
-        for i in range(len(test_items)):
+        for i in tqdm(range(len(test_items))):
             augmented_items += [nn_df.ItemId[i]]
             # add augmented row
             augmented_row = np.mean(augmented_b[nn_df.Indexes[i],:], axis=0)
@@ -90,7 +91,7 @@ def knn_augment(b_mat, sim_mat, sim_item_map, train_item_map, test_items, data,
             augmented_b = np.hstack((augmented_b, augmented_col.reshape(-1,1)))
     
     elif method == 'weighted':
-        for i in range(len(test_items)):
+        for i in tqdm(range(len(test_items))):
             augmented_items += [nn_df.ItemId[i]]
             augmented_row = np.zeros(n_init+i)
             augmented_col = np.zeros(n_init+i)

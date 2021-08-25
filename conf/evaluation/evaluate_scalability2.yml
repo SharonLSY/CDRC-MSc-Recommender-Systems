@@ -1,0 +1,33 @@
+type: single # single|window, maybe add opt
+key: evaluate_scalability2 #added to the csv names
+evaluation: evaluation #evaluation|evaluation_last|evaluation_multiple
+data:
+  name: evaluate_scalability2 #added in the end of the csv names
+  folder: ./data/prepared/beauty_new_items/
+  prefix: browsing_data
+#  opts: {sessions_test: 500}
+
+results:
+  folder: results/evaluate_scalability2/
+#  picke_models: results/models/
+
+metrics:
+- class: accuracy.MRR
+  length: [10,20]
+- class: accuracy.HitRate
+  length: [10,20]
+- class: coverage.Coverage
+  length: [10,20]
+- class: popularity.Popularity
+  length: [10,20]
+- class: time_memory_usage.Time_usage_training
+- class: time_memory_usage.Time_usage_testing
+- class: time_memory_usage.Memory_usage
+
+algorithms:
+- class: slist_ext.SLIST_ext
+  params: {reg: 10, direction: 'all', alpha: 0.1, train_weight: 0.125, predict_weight: 0.7673070073686803, session_weight: 300, n_neighbors: 50, knn_metric: 'cosine', prod2vec_file: './data/prepared/beauty_new_items/X_meta.npz', prod2vec_map: './data/prepared/beauty_new_items/meta_item.csv'}
+  key: slist_ext
+- class: slist.SLIST
+  params: {reg: 10, direction: 'all', alpha: 0.1, train_weight: 0.125, predict_weight: 0.7673070073686803, session_weight: 300}
+  key: slist2

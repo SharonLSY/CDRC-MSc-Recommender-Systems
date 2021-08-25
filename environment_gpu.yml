@@ -1,8 +1,10 @@
-name: srec37
+name: recsys
 channels:
   - defaults
   - conda-forge
   - mila-udem
+  - pytorch
+  - intel
 dependencies:
   - python=3.7
   - scipy=1.6.2
@@ -28,3 +30,11 @@ dependencies:
   - python-telegram-bot=13.5
   - tqdm
   - bottleneck
+  - mkl
+  - pytorch=1.9.0
+  - torchvision
+  - torchaudio
+  - cudatoolkit=10.2
+  - scikit-learn-intelex
+  - seaborn
+  - tensorflow-mkl

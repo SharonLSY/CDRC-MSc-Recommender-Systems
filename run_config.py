@@ -22,6 +22,8 @@ import telegram
 import random
 import gc
 
+yml_file = 'conf/evaluate_beauty_new_items.yml'
+
 # telegram notificaitons
 NOTIFY = False
 TELEGRAM_STATUS = False
@@ -910,6 +912,7 @@ def status(bot, update):
         update.message.reply_text(
             'Running on {}'.format(socket.gethostname()))
 
+#main(yml_file)
 
 if __name__ == '__main__':
 

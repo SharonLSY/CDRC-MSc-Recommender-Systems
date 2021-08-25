@@ -18,15 +18,16 @@ METHOD = "test_date"
 data config (all methods)
 '''
 PATH = './data/'
-PATH_PROCESSED = './data/prepared/test_date_trial/'
-FILE = 'test'
-NEW_ITEMS = True # bool, if True then it keeps items in test set
-
+PATH_PROCESSED = './data/prepared2/beauty_models/'
+FILE = 'browsing_data'
+NEW_ITEMS = False # bool, if True then it keeps items in test set
+RANDOM_SAMPLE = 0.05
+LIMIT_BEAUTY=True
 '''
 org_min_date config
 '''
-MIN_DATE = '2014-07-01'
-TEST_DATE = '2020-04-15'
+#MIN_DATE = '2014-07-01'
+TEST_DATE = '2021-07-01'
 
 '''
 filtering config (all methods)
@@ -35,19 +36,14 @@ MIN_SESSION_LENGTH = 2
 MIN_ITEM_SUPPORT = 5
 
 '''
-days test default config
-'''
-DAYS_TEST = 1
-
-'''
 slicing default config
 '''
-NUM_SLICES = 5
-DAYS_OFFSET = 0 #number of days the training start date is shifted after creating one slice
+#NUM_SLICES = 5
+#DAYS_OFFSET = 0 #number of days the training start date is shifted after creating one slice
 #each slice consists of...
-DAYS_TRAIN = 30
-DAYS_TEST = 1
-DAYS_SHIFT = DAYS_TRAIN + DAYS_TEST
+DAYS_TRAIN = 10 #30
+DAYS_TEST = 1 #3
+#DAYS_SHIFT = DAYS_TRAIN + DAYS_TEST
 
 if __name__ == '__main__':
     '''
@@ -76,7 +72,7 @@ if __name__ == '__main__':
         pp.preprocess_buys( PATH, FILE, PATH_PROCESSED )
         
     elif METHOD == "test_date":
-        pp.preprocess_from_test_date( PATH, FILE, PATH_PROCESSED, MIN_ITEM_SUPPORT, MIN_SESSION_LENGTH, TEST_DATE, DAYS_TRAIN, DAYS_TEST, NEW_ITEMS )
+        pp.preprocess_from_test_date( PATH, FILE, PATH_PROCESSED, MIN_ITEM_SUPPORT, MIN_SESSION_LENGTH, TEST_DATE, DAYS_TRAIN, DAYS_TEST, NEW_ITEMS, RANDOM_SAMPLE, LIMIT_BEAUTY )
     
     else: 
         print( "Invalid method ", METHOD )

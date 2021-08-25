@@ -12,9 +12,9 @@ import evaluation.evaluation as evaluation
 '''
 FILE PARAMETERS
 '''
-folder = '28062021/'
+folder = 'trial/'
 PATH_PROCESSED = './data/prepared/' + folder
-FILE = 'test'
+FILE = 'BDC.BROWSING_PRODUCT_VIEW'
 
 '''
 MODEL HYPERPARAMETER TUNING
@@ -33,24 +33,21 @@ np.random.seed(seed)
 torch.manual_seed(seed)
 
 # hyperparameter tuning
-train, val = load_data_session(PATH_PROCESSED, FILE, slice_num=0, train_eval=True)
+train, val = load_data_session(PATH_PROCESSED, FILE, train_eval=True)
 
-conf_gamma = []
-conf_lr = []
-mrr_score = []
+#conf_gamma = []
+#conf_lr = []
+#mrr_score = []
 
-for g in [5e-4,1e-3,5e-3,1e-2,5e-2,1e-1]:
-    for l in [5e-4,1e-3,5e-3,1e-2,5e-2,1e-1]:
-
-        model = RecVAE(batch_size=50, gamma=g, lr=l)
-        model.fit(train, val)
+model = RecVAE(batch_size=500, n_epochs=1)
+model.fit(train, val)
         
-        mrr = MRR(length=10)
-        
-        result = evaluation.evaluate_sessions(model, [mrr], val, train)
-        
-        conf_gamma.append(g)
-        conf_lr.append(l)
-        mrr_score.append(result[0][1])
+mrr = MRR(length=10)
 
-results_df = pd.DataFrame({'gamma':conf_gamma, 'lr': conf_lr, 'mrr':mrr_score})
+result = evaluation.evaluate_sessions(model, [mrr], val, train)
+
+#conf_gamma.append(g)
+#conf_lr.append(l)
+#mrr_score.append(result[0][1])
+
+#results_df = pd.DataFrame({'gamma':conf_gamma, 'lr': conf_lr, 'mrr':mrr_score})

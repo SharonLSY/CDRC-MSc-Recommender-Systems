@@ -172,7 +172,7 @@ class RecVAE(nn.Module):
                  n_epochs=50, n_enc_epochs=3, n_dec_epochs=1,
                  batch_size=500, beta=None, gamma=0.005, lr=5e-4,
                  not_alternating=False,
-                 device=torch.device("cuda:0"),
+                 device=None,
                  session_key = 'SessionId', item_key = 'ItemId',
                  model=VAE
                  ):
@@ -192,7 +192,11 @@ class RecVAE(nn.Module):
         self.gamma = gamma
         self.lr = lr
         
-        self.device = device
+        if device is None:
+            use_cuda = torch.cuda.is_available()
+            self.device = torch.device('cuda' if use_cuda else 'cpu')
+        else:
+            self.device = device
         self.not_alternating = not_alternating
         
         self.session_key = session_key
@@ -242,9 +246,9 @@ class RecVAE(nn.Module):
         def numerize(tp):
             uid = list(map(lambda x: self.useridmap[x], tp[self.session_key]))
             sid = list(map(lambda x: self.itemidmap[x], tp[self.item_key]))
-            return pd.DataFrame(data={'uid': uid, 'sid': sid}, columns=['SessionId', 'ItemId'])
+            return pd.DataFrame(data={'SessionId': uid, 'ItemId': sid})
         
-        data = numerize(data)
+
         data_val_tr = numerize(data_val_tr)
         data_val_te = numerize(data_val_te)
         
@@ -259,6 +263,7 @@ class RecVAE(nn.Module):
                                     dtype='float64', shape=(end_idx - start_idx + 1, self.n_items))
         mat_val_te = sparse.csr_matrix((np.ones_like(rows_te),(rows_te, cols_te)), 
                                     dtype='float64', shape=(end_idx - start_idx + 1, self.n_items))
+        
         
         # train
         ones = np.ones( len(data) )
@@ -406,6 +411,7 @@ class RecVAE(nn.Module):
                     optimizer.zero_grad()
                     
                 _, loss = self.vae_model(ratings, beta=self.beta, gamma=self.gamma, dropout_rate=dropout_rate)
+                print('loss:', loss)
                 loss.backward()
                 
                 for optimizer in opts:

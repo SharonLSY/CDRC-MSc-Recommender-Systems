@@ -29,6 +29,7 @@ class Coverage:
             It must have a header. Column names are arbitrary, but must correspond to the ones you set during the initialization of the network (session_key, item_key, time_key properties).
         '''        
         self.coverage_set = set()
+        self.items = set(train[self.item_key].unique()) # keep track of full item list
         self.num_items = len( train[self.item_key].unique() )
         
     def reset(self):
@@ -54,6 +55,8 @@ class Coverage:
         recs = result[:self.length]
         items = recs.index.unique()
         self.coverage_set.update( items )
+        self.items.update( items ) # update items
+        self.num_items = len( self.items )
         
     def add_multiple(self, result, next_items, for_item=0, session=0, position=None):   
         self.add(result, next_items[0], for_item, session)

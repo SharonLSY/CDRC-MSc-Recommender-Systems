@@ -124,6 +124,10 @@ class SLIST:
         w2 = []
         sessionlengthmap = data['SessionIdx'].value_counts(sort=False)
         rowid = -1
+        
+        directory = os.path.dirname('./data_ckpt/')
+        if not os.path.exists(directory):
+            os.makedirs(directory)
 
         if weight_by == 'SLIT':
             if os.path.exists(f'./data_ckpt/{self.n_sessions}_{self.n_items}_{self.direction}_SLIT.p'):
@@ -192,6 +196,7 @@ class SLIST:
                 target_col = input_col
                 input_data = np.ones_like(input_row)
                 target_data = np.ones_like(target_row)
+                
                 with open(f'./data_ckpt/{self.n_sessions}_{self.n_items}_SLIS.p','wb') as f:
                     pickle.dump([input_row, input_col, input_data, target_row, target_col, target_data, w2], f, protocol=4)
         else:
@@ -257,15 +262,19 @@ class SLIST:
             self.session_times = []
 
         if type == 'view':
-            self.session_items.append(input_item_id)
-            self.session_times.append(timestamp)
+            if input_item_id in self.itemidmap.index:
+                self.session_items.append(input_item_id)
+                self.session_times.append(timestamp)
 
         # item id transfomration
         session_items_new_id = self.itemidmap[self.session_items].values
         predict_for_item_ids_new_id = self.itemidmap[predict_for_item_ids].values
+        
+        if session_items_new_id.shape[0] == 0:
+            skip = True
 
         if skip:
-            return
+            return pd.Series(data=0, index=predict_for_item_ids)
 
         W_test = np.ones_like(self.session_items, dtype=np.float32)
         W_test = self.enc_w[session_items_new_id[-1], session_items_new_id]
