@@ -18,7 +18,7 @@ METHOD = "test_date"
 data config (all methods)
 '''
 PATH = './data/'
-PATH_PROCESSED = './data/prepared2/beauty_models/'
+PATH_PROCESSED = './data/prepared/beauty_models/'
 FILE = 'browsing_data'
 NEW_ITEMS = False # bool, if True then it keeps items in test set
 RANDOM_SAMPLE = 0.05

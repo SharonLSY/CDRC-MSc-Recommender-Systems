@@ -12,6 +12,9 @@ from scipy.sparse import load_npz
 from algorithms.slist import SLIST
 from evaluation.loader import load_data_session
 from utils.knn_utils import *
+from run_config import create_algorithms_dict
+
+conf = 'conf/evaluation/evaluate_beauty_models.yml'
 
 '''
 FILE PARAMETERS
@@ -23,12 +26,12 @@ FILE = 'browsing_data'
 '''
 SLIST OPTIMAL HYPERPARAMETERS
 '''
-alpha = 0.1 #[0.2, 0.4, 0.6, 0.8] 
-direction = 'all' # sr / part / all
-reg = 10
-train_weight = 0.125 #0.5 #[0.125, 0.25, 0.5, 1, 2, 4, 8]
-predict_weight = 0.7673070073686803 #4 #[0.125, 0.25, 0.5, 1, 2, 4, 8]
-session_weight = 300 #256 #[1, 2, 4, 8, 16, 32, 64, 128, 256]
+#alpha = 0.1 #[0.2, 0.4, 0.6, 0.8] 
+#direction = 'all' # sr / part / all
+#reg = 10
+#train_weight = 0.125 #0.5 #[0.125, 0.25, 0.5, 1, 2, 4, 8]
+#predict_weight = 0.7673070073686803 #4 #[0.125, 0.25, 0.5, 1, 2, 4, 8]
+#session_weight = 300 #256 #[1, 2, 4, 8, 16, 32, 64, 128, 256]
 
 '''
 Item Features Matrix
@@ -36,9 +39,28 @@ Item Features Matrix
 prod2vec_file = PATH_PROCESSED+'X_meta.npz'
 prod2vec_mapping = PATH_PROCESSED+'meta_item.csv'
 
+# read optimal hyperparameters from conf file
+
+file = Path(conf)
+if file.is_file():
+
+    print('Loading file')
+    stream = open(str(file))
+    c = yaml.load(stream)
+    stream.close()
+    
+slist_params = list(filter(lambda x: x['key'] == 'slist', c['algorithms']))[0]['params']
+alpha = slist_params['alpha']
+direction = slist_params['direction']
+train_weight = slist_params['alpha']
+train_weight = slist_params['train_weight']
+predict_weight = slist_params['predict_weight']
+session_weight = slist_params['session_weight']
+
+
 # setting up ground truth B
 train, test = load_data_session(PATH_PROCESSED, FILE, train_eval=False)
-model = SLIST(alpha=alpha, direction=direction, reg=reg, train_weight=train_weight, 
+model = SLIST(alpha=alpha, direction=direction, reg=10, train_weight=train_weight, 
                     predict_weight=predict_weight, session_weight=session_weight)
 model.fit(train)
 alt_item_map = model.itemidmap

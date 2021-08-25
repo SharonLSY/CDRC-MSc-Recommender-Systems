@@ -1,0 +1,21 @@
+type: single # single|window
+mode: session_based # session_based | session_aware
+preprocessor: browsing_data # dataset (folder) name
+data:
+  folder: data/
+  prefix: browsing_data
+
+filter:
+  min_item_support: 5
+  min_session_length: 2
+
+params:
+  days_test: 1
+  days_train: 10
+  test_date: 2021-07-01
+  new_items: False
+  random_sample: 0.05
+  limit_beauty: True
+
+output:
+  folder: data/prepared/beauty_models
