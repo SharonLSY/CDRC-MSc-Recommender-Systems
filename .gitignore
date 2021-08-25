@@ -117,6 +117,8 @@ venv.bak/
 conf/in/*
 conf/out/*
 /results/**/*.csv
+/.vscode/
+**/__pycache__/
 
 .idea
 /data/
