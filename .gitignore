@@ -116,6 +116,7 @@ venv.bak/
 .idea/workspace.xml
 conf/in/*
 conf/out/*
+/results/**/*.csv
 
 .idea
 /data/
