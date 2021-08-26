@@ -310,6 +310,8 @@ rep_data.columns = ['UserId','SessionId','ItemId','rep_count']
 
 print(f'% of sessions with repeated items within session: {100*rep_data.loc[rep_data.rep_count >=2].SessionId.nunique()/data.SessionId.nunique()}')
 print(f'% of users with repeated items within session: {100*rep_data.loc[rep_data.rep_count >=2].UserId.nunique()/data.UserId.nunique()}')
+print(f'% of product views that are repeats: {100*(rep_data.rep_count.sum() - rep_data.shape[0])/data.shape[0]}')
+
 
 # repeated item consumption across sessions
 
@@ -336,6 +338,40 @@ meta = meta[['sap_code_var_p','category','brand_description']]
 
 data = pd.merge(data, meta, left_on='ItemId', right_on='sap_code_var_p', how='left')
 
+##################################################
+
+# looking at category of items in each session
+
+data = pd.read_csv(data_filepath+'_train_full.txt', sep='\t')
+
+data = data.sort_values(by=['UserId','SessionId','Time'], ascending=True, ignore_index=True)
+data['next_user'] = data['UserId'].shift(-1)
+data['next_session'] = data['SessionId'].shift(-1)#
+data['next_item'] = data['ItemId'].shift(-1)
+data = data.loc[(data.UserId == data.next_user) & (data.SessionId == data.next_session)].reset_index(drop=True)
+del data['next_user'], data['next_session']
+data = data.loc[:,['Time', 'UserId', 'SessionId', 'ItemId', 'next_item']]
+data.columns = ['Time', 'UserId', 'SessionId', 'item', 'next_item']
+
+meta = pd.read_csv('data/item_dims1.csv')
+meta2 = pd.read_csv('data/item_dims2.csv')
+meta = pd.concat([meta, meta2], axis=0).drop_duplicates().reset_index(drop=True)
+del meta2
+
+meta['category'] = meta['merchandise_category_description']
+#meta.loc[meta.item_hierarchy5_description.str.lower() == meta.brand_description.str.lower(),'category'] = meta.loc[meta.item_hierarchy5_description.str.lower() == meta.brand_description.str.lower(),'item_hierarchy4_description']
+meta = meta[['sap_code_var_p','category']]
+
+data = pd.merge(data, meta, left_on='item', right_on='sap_code_var_p')
+del data['sap_code_var_p']
+data = pd.merge(data, meta, left_on='next_item', right_on='sap_code_var_p')
+del data['sap_code_var_p']
+
+
+session_changes = data.loc[data.category_x != data.category_y].copy()
+
+print(f'% of sessions with subcat changes within session: {100*session_changes.SessionId.nunique()/data.SessionId.nunique()}')
+print(f'% of product transitions that are a change in subcat: {100*session_changes.shape[0]/data.shape[0]}')
 
 
 
