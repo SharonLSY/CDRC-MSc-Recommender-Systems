@@ -1,5 +1,7 @@
 # CDRC-MSc-Recommender-Systems
- Recommender Systems for CDRC MSc
+ Recommender Systems for CDRC Masters Dissertation Scheme.
+
+Abstract: https://www.cdrc.ac.uk/wp-content/uploads/sites/72/2021/10/Sharon-Liu-MDS2021-Abstract-1.pdf
 
 
 This is based on the session-based recommendation framework session-rec (https://github.com/rn5l/session-rec).
